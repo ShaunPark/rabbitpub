@@ -71,8 +71,9 @@ func main() {
 			}
 
 			for msg := range msgs {
-				data, _ := json.Marshal(msg)
-				klog.Info(data)
+				rep := &BeeResponse{}
+				json.Unmarshal(msg.Body, rep)
+				klog.Info(rep)
 				wg.Done()
 			}
 		}
