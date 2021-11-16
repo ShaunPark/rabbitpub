@@ -210,8 +210,8 @@ func makeRequest(port int, coId string) types.BeeRequest {
 				WorkerId:   fmt.Sprintf("worker-%d", port),
 				ClusterIps: []string{"10.0.0.12"},
 				NodeIp:     "10.0.0.12",
-				NodePort:   port + 10000,
-				ProxyPort:  port,
+				NodePort:   port + 20000,
+				ProxyPort:  port + 10000,
 			},
 		},
 	}
@@ -231,7 +231,7 @@ func makeDeleteRequest(port int, coId string) types.BeeRequest {
 			RequestName: "deleteWorker",
 			Data: types.RequestData{
 				WorkerId:  fmt.Sprintf("worker-%d", port),
-				ProxyPort: port,
+				ProxyPort: port + 10000,
 			},
 		},
 	}
@@ -245,8 +245,8 @@ func makeBatchRequest(coId string, beginPort, endPort int) types.BeeRequest {
 			WorkerId:   fmt.Sprintf("worker-%d", i),
 			ClusterIps: []string{"10.0.0.12"},
 			NodeIp:     "10.0.0.12",
-			NodePort:   i + 10000,
-			ProxyPort:  i,
+			NodePort:   i + 20000,
+			ProxyPort:  i + 10000,
 		})
 	}
 	return types.BeeRequest{
