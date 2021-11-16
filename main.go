@@ -152,6 +152,7 @@ func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 func main() {
 	kingpin.Parse()
 	config = getConfig()
+	mo := *mode
 
 	name := config.RabbitMQ.Queue
 	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.RabbitMQ.Server.Id, config.RabbitMQ.Server.Password, config.RabbitMQ.Server.Host, config.RabbitMQ.Server.Port))
@@ -177,7 +178,7 @@ func main() {
 	bp, err := strconv.Atoi(ps[0])
 	failOnError(err, "begin parse error")
 
-	switch *mode {
+	switch mo {
 	case "s":
 		processSingle(ch, q, bp, ep)
 	case "b":
