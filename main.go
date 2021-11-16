@@ -19,7 +19,7 @@ const (
 func main() {
 	name := "testqueue"
 	conn, err := amqp.Dial("amqp://username:password@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
+	failOnError(err, "Failed  to connect to RabbitMQ")
 	defer conn.Close()
 
 	ch, err := conn.Channel()
@@ -71,7 +71,8 @@ func main() {
 			}
 
 			for msg := range msgs {
-				klog.Info(msg)
+				data, _ := json.Marshal(msg)
+				klog.Info(data)
 				wg.Done()
 			}
 		}
