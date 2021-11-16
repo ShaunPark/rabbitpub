@@ -37,7 +37,7 @@ func main() {
 	cnt := r2.Intn(20)
 	log.Print(cnt)
 	// Attempt to push a message every 2 seconds
-	go getResponse(conn, reply_queue)
+	go getResponse(ch, reply_queue)
 	for i < cnt {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
@@ -91,15 +91,7 @@ const (
 	reply_queue = "rep_queue"
 )
 
-func getResponse(conn *amqp.Connection, replyQueue string) {
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	if err != nil {
-		klog.Error(err, "Failed to open a channel")
-	}
-	defer ch.Close()
-
+func getResponse(ch *amqp.Channel, replyQueue string) {
 	q, err := ch.QueueDeclare(
 		reply_queue, // name
 		true,        // durable
