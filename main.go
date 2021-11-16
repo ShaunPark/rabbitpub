@@ -28,6 +28,8 @@ var (
 	ports      = kingpin.Flag("ports", "end of port range").Short('p').String()
 
 	config *types.Config
+
+	coIds = map[string]string{}
 )
 
 // read config file
@@ -67,6 +69,8 @@ func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 
 	go consumeQueue(ch, wg)
 	wg.Add(1)
+	coIds[coId] = coId
+
 	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort))
 	err := publishMessage(ch, q, coId, body)
 	failOnError(err, "Failed to publish a message")
@@ -75,40 +79,40 @@ func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 }
 
 func consumeQueue(ch *amqp.Channel, wg sync.WaitGroup) {
-	go func() {
-		{
-			q, err := ch.QueueDeclare(
-				reply_queue, // name
-				true,        // durable
-				false,       // delete when unused
-				false,       // exclusive
-				false,       // noWait
-				nil,         // arguments
-			)
-			if err != nil {
-				klog.Error(err, "Failed to declare a queue")
-			}
-			msgs, err := ch.Consume(
-				q.Name, // queue
-				"",     // consumer
-				true,   // auto-ack
-				false,  // exclusive
-				false,  // no-local
-				false,  // no-wait
-				nil,    // args
-			)
-			if err != nil {
-				klog.Error(err, "Failed to register a consumer")
-			}
+	q, err := ch.QueueDeclare(
+		reply_queue, // name
+		true,        // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // noWait
+		nil,         // arguments
+	)
+	if err != nil {
+		klog.Error(err, "Failed to declare a queue")
+	}
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	if err != nil {
+		klog.Error(err, "Failed to register a consumer")
+	}
 
-			for msg := range msgs {
-				rep := &types.BeeResponse{}
-				json.Unmarshal(msg.Body, rep)
-				klog.Info(rep)
-				wg.Done()
-			}
+	for msg := range msgs {
+		rep := &types.BeeResponse{}
+		json.Unmarshal(msg.Body, rep)
+		klog.Info(rep)
+		coId := rep.MetaData.CorrelationId
+		if _, exist := coIds[coId]; exist {
+			delete(coIds, coId)
+			wg.Done()
 		}
-	}()
+	}
 }
 
 func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
@@ -121,6 +125,7 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
 		coId := fmt.Sprintf("%d", time.Millisecond)
+		coIds[coId] = coId
 		body, _ := json.Marshal(makeRequest(10000+i, coId))
 
 		err := publishMessage(ch, q, coId, body)
@@ -139,6 +144,7 @@ func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	for i := beginPort; i < endPort; i++ {
 		wg.Add(1)
 		coId := fmt.Sprintf("%d", time.Millisecond)
+		coIds[coId] = coId
 		body, _ := json.Marshal(makeDeleteRequest(10000+i, coId))
 
 		err := publishMessage(ch, q, coId, body)
