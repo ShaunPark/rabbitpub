@@ -108,15 +108,15 @@ func main() {
 func makeRequest(port int, coId string) BeeRequest {
 	return BeeRequest{
 		MetaData: &MetaData{
-			Type:          "ADD",
-			SubType:       "",
+			Type:          "NETWORK_CFG",
+			SubType:       "ADD",
 			From:          "Tester",
-			To:            "proxyUpdater",
-			Queue:         reply_queue,
+			To:            "HAProxyUpdater",
+			Queue:         "testqueue",
 			CorrelationId: coId,
 		},
 		PayLoad: RequestPayLoad{
-			RequestName: "create",
+			RequestName: "createWorker",
 			Data: RequestData{
 				WorkerId:   fmt.Sprintf("worker-%d", port),
 				ClusterIps: []string{"10.0.0.12"},
