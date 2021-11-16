@@ -126,7 +126,7 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 		time.Sleep(time.Millisecond * time.Duration(delay))
 		coId := fmt.Sprintf("%d", time.Millisecond)
 		coIds[coId] = coId
-		body, _ := json.Marshal(makeRequest(10000+i, coId))
+		body, _ := json.Marshal(makeRequest(i, coId))
 
 		err := publishMessage(ch, q, coId, body)
 		failOnError(err, "Failed to publish a message")
@@ -145,7 +145,7 @@ func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 		wg.Add(1)
 		coId := fmt.Sprintf("%d", time.Millisecond)
 		coIds[coId] = coId
-		body, _ := json.Marshal(makeDeleteRequest(10000+i, coId))
+		body, _ := json.Marshal(makeDeleteRequest(i, coId))
 
 		err := publishMessage(ch, q, coId, body)
 		failOnError(err, "Failed to publish a message")
