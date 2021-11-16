@@ -24,8 +24,8 @@ const (
 
 var (
 	configFile = kingpin.Flag("configFile", "configFile").Short('f').Required().String()
-	mode       = kingpin.Flag("mode", "log level").Short('m').Required().Default("s").String()
-	ports      = kingpin.Flag("ports", "end of port range").Short('p').Default("1:1").String()
+	mode       = kingpin.Flag("mode", "log level").Short('m').Required().String()
+	ports      = kingpin.Flag("ports", "end of port range").Short('p').String()
 
 	config *types.Config
 )
