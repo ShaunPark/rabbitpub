@@ -12,6 +12,10 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
+const (
+	reply_queue = "rep_queue"
+)
+
 func main() {
 	name := "testqueue"
 	conn, err := amqp.Dial("amqp://username:password@localhost:5672/")
@@ -77,7 +81,8 @@ func main() {
 		wg.Add(1)
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
-		body, _ := json.Marshal(makeRequest(10000 + i))
+		coId := fmt.Sprintf("%d", time.Millisecond)
+		body, _ := json.Marshal(makeRequest(10000+i, coId))
 		i++
 
 		err = ch.Publish(
@@ -86,8 +91,10 @@ func main() {
 			false,  // mandatory
 			false,  // immediate
 			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        body,
+				ContentType:   "text/plain",
+				ReplyTo:       reply_queue,
+				CorrelationId: coId,
+				Body:          body,
 			})
 		failOnError(err, "Failed to publish a message")
 		log.Printf(" [x] Sent %s", body)
@@ -96,7 +103,7 @@ func main() {
 	wg.Wait()
 }
 
-func makeRequest(port int) BeeRequest {
+func makeRequest(port int, coId string) BeeRequest {
 	return BeeRequest{
 		MetaData: &MetaData{
 			Type:          "ADD",
@@ -104,7 +111,7 @@ func makeRequest(port int) BeeRequest {
 			From:          "Tester",
 			To:            "proxyUpdater",
 			Queue:         reply_queue,
-			CorrelationId: fmt.Sprintf("%d", time.Millisecond),
+			CorrelationId: coId,
 		},
 		PayLoad: RequestPayLoad{
 			RequestName: "create",
@@ -123,7 +130,3 @@ func failOnError(err error, msg string) {
 		log.Fatalf("%s: %s", msg, err)
 	}
 }
-
-const (
-	reply_queue = "rep_queue"
-)
