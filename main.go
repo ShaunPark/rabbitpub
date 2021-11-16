@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	name := "testqueue"
-	conn, err := amqp.Dial("amqp://username:password@3.37.120.95:5672/")
+	conn, err := amqp.Dial("amqp://username:password@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -38,7 +39,7 @@ func main() {
 	for i < cnt {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
-		body := fmt.Sprintf("%d-%s", i, "message")
+		body, _ := json.Marshal(makeRequest(i))
 		i++
 
 		err = ch.Publish(
@@ -48,12 +49,35 @@ func main() {
 			false,  // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
-				Body:        []byte(body),
+				Body:        body,
 			})
 		failOnError(err, "Failed to publish a message")
 		log.Printf(" [x] Sent %s", body)
 	}
 
+}
+
+func makeRequest(port int) BeeRequest {
+	return BeeRequest{
+		MetaData: &MetaData{
+			Type:          "ADD",
+			SubType:       "",
+			From:          "Tester",
+			To:            "proxyUpdater",
+			Queue:         "replyQueue",
+			CorrelationId: fmt.Sprintf("%d", time.Millisecond),
+		},
+		PayLoad: RequestPayLoad{
+			RequestName: "create",
+			Data: RequestData{
+				WorkerId:   fmt.Sprintf("worker-%d", port),
+				ClusterIps: []string{"10.0.0.12"},
+				NodeIp:     "10.0.0.12",
+				NodePort:   port + 10000,
+				ProxyPort:  port,
+			},
+		},
+	}
 }
 func failOnError(err error, msg string) {
 	if err != nil {
