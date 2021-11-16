@@ -64,7 +64,7 @@ func publishMessage(ch *amqp.Channel, q amqp.Queue, coId string, body []byte) er
 }
 
 func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	coId := fmt.Sprintf("%d", time.Millisecond)
 
 	go consumeQueue(ch, wg)
@@ -78,7 +78,7 @@ func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	wg.Wait()
 }
 
-func consumeQueue(ch *amqp.Channel, wg sync.WaitGroup) {
+func consumeQueue(ch *amqp.Channel, wg *sync.WaitGroup) {
 	q, err := ch.QueueDeclare(
 		reply_queue, // name
 		true,        // durable
@@ -117,7 +117,7 @@ func consumeQueue(ch *amqp.Channel, wg sync.WaitGroup) {
 
 func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	// Attempt to push a message every 2 seconds
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	go consumeQueue(ch, wg)
 
 	for i := beginPort; i < endPort; i++ {
@@ -138,7 +138,7 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 
 func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	// Attempt to push a message every 2 seconds
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	go consumeQueue(ch, wg)
 
 	for i := beginPort; i < endPort; i++ {

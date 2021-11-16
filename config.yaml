@@ -1,0 +1,23 @@
+testMode: true
+batchProcess:
+  eventCount: 10
+  maxDuration: 10
+  durable: false
+rabbitmq:
+  server:
+    host: '52.78.93.210'
+    port: '5672'
+    id: 'username'
+  queueName: 'testqueue'
+  useReplyQueueFromMessage: true
+  replyQueueName: 'replyQueue'
+haproxy:
+  reloadSecondNode: false
+  master:
+    host: '3.37.120.95'
+    port: '5555'
+    id: 'admin'
+  second:
+    host: '3.37.120.95'
+    port: '5555'
+    id: 'admin'
