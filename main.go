@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/streadway/amqp"
+	klog "k8s.io/klog/v2"
 )
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 	cnt := r2.Intn(20)
 	log.Print(cnt)
 	// Attempt to push a message every 2 seconds
+	go getResponse(conn, reply_queue)
 	for i < cnt {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
@@ -64,7 +66,7 @@ func makeRequest(port int) BeeRequest {
 			SubType:       "",
 			From:          "Tester",
 			To:            "proxyUpdater",
-			Queue:         "replyQueue",
+			Queue:         reply_queue,
 			CorrelationId: fmt.Sprintf("%d", time.Millisecond),
 		},
 		PayLoad: RequestPayLoad{
@@ -83,4 +85,43 @@ func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 	}
+}
+
+const (
+	reply_queue = "rep_queue"
+)
+
+func getResponse(conn *amqp.Connection, replyQueue string) {
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		klog.Error(err, "Failed to open a channel")
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		reply_queue, // name
+		true,        // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // noWait
+		nil,         // arguments
+	)
+	if err != nil {
+		klog.Error(err, "Failed to declare a queue")
+	}
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	if err != nil {
+		klog.Error(err, "Failed to register a consumer")
+	}
+	klog.Info(msgs)
 }
