@@ -39,7 +39,7 @@ func main() {
 	for i < cnt {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
-		body, _ := json.Marshal(makeRequest(i))
+		body, _ := json.Marshal(makeRequest(10000 + i))
 		i++
 
 		err = ch.Publish(
