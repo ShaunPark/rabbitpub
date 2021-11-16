@@ -240,7 +240,7 @@ func makeDeleteRequest(port int, coId string) types.BeeRequest {
 func makeBatchRequest(coId string, beginPort, endPort int) types.BeeRequest {
 	data := []types.RequestData{}
 
-	for i := beginPort; i <= endPort; i++ {
+	for i := beginPort; i < endPort; i++ {
 		data = append(data, types.RequestData{
 			WorkerId:   fmt.Sprintf("worker-%d", i),
 			ClusterIps: []string{"10.0.0.12"},
