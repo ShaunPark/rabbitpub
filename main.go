@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -37,8 +38,43 @@ func main() {
 	cnt := r2.Intn(20)
 	log.Print(cnt)
 	// Attempt to push a message every 2 seconds
-	go getResponse(ch, reply_queue)
+	wg := sync.WaitGroup{}
+
+	go func() {
+		{
+			q, err := ch.QueueDeclare(
+				reply_queue, // name
+				true,        // durable
+				false,       // delete when unused
+				false,       // exclusive
+				false,       // noWait
+				nil,         // arguments
+			)
+			if err != nil {
+				klog.Error(err, "Failed to declare a queue")
+			}
+			msgs, err := ch.Consume(
+				q.Name, // queue
+				"",     // consumer
+				true,   // auto-ack
+				false,  // exclusive
+				false,  // no-local
+				false,  // no-wait
+				nil,    // args
+			)
+			if err != nil {
+				klog.Error(err, "Failed to register a consumer")
+			}
+
+			for msg := range msgs {
+				klog.Info(msg)
+				wg.Done()
+			}
+		}
+	}()
+
 	for i < cnt {
+		wg.Add(1)
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
 		body, _ := json.Marshal(makeRequest(10000 + i))
@@ -57,6 +93,7 @@ func main() {
 		log.Printf(" [x] Sent %s", body)
 	}
 
+	wg.Wait()
 }
 
 func makeRequest(port int) BeeRequest {
@@ -90,30 +127,3 @@ func failOnError(err error, msg string) {
 const (
 	reply_queue = "rep_queue"
 )
-
-func getResponse(ch *amqp.Channel, replyQueue string) {
-	q, err := ch.QueueDeclare(
-		reply_queue, // name
-		true,        // durable
-		false,       // delete when unused
-		false,       // exclusive
-		false,       // noWait
-		nil,         // arguments
-	)
-	if err != nil {
-		klog.Error(err, "Failed to declare a queue")
-	}
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	if err != nil {
-		klog.Error(err, "Failed to register a consumer")
-	}
-	klog.Info(msgs)
-}
