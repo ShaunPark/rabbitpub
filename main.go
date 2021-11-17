@@ -30,6 +30,8 @@ var (
 	config *types.Config
 
 	coIds = map[string]string{}
+
+	mutex = sync.Mutex{}
 )
 
 // read config file
@@ -63,15 +65,21 @@ func publishMessage(ch *amqp.Channel, q amqp.Queue, coId string, body []byte) er
 
 }
 
+func addCoId(id string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	coIds[id] = id
+}
+
 func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	wg := &sync.WaitGroup{}
-	coId := fmt.Sprintf("%d", time.Millisecond)
+	coId := fmt.Sprintf("%d", time.Now().UnixNano())
 
 	go consumeQueue(ch, wg)
 	wg.Add(1)
-	coIds[coId] = coId
+	addCoId(coId)
 
-	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort))
+	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCH"))
 	err := publishMessage(ch, q, coId, body)
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s", body)
@@ -108,10 +116,15 @@ func consumeQueue(ch *amqp.Channel, wg *sync.WaitGroup) {
 		json.Unmarshal(msg.Body, rep)
 		klog.Info(rep)
 		coId := rep.MetaData.CorrelationId
-		if _, exist := coIds[coId]; exist {
-			delete(coIds, coId)
-			wg.Done()
-		}
+
+		go func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+			if _, exist := coIds[coId]; exist {
+				delete(coIds, coId)
+				wg.Done()
+			}
+		}()
 	}
 }
 
@@ -122,10 +135,11 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 
 	for i := beginPort; i < endPort; i++ {
 		wg.Add(1)
+		coId := fmt.Sprintf("%d", time.Now().UnixNano())
+		addCoId(coId)
+
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
-		coId := fmt.Sprintf("%d", time.Millisecond)
-		coIds[coId] = coId
 		body, _ := json.Marshal(makeRequest(i, coId))
 
 		err := publishMessage(ch, q, coId, body)
@@ -136,6 +150,35 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	wg.Wait()
 }
 
+func processTest(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
+	wg := &sync.WaitGroup{}
+	coId := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	go consumeQueue(ch, wg)
+	wg.Add(1)
+	addCoId(coId)
+
+	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCHLOAD"))
+	err := publishMessage(ch, q, coId, body)
+	failOnError(err, "Failed to publish a message")
+	log.Printf(" [x] Sent %s", body)
+	wg.Wait()
+}
+
+func processBatchDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
+	wg := &sync.WaitGroup{}
+	coId := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	go consumeQueue(ch, wg)
+	wg.Add(1)
+	addCoId(coId)
+
+	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCHDELETE"))
+	err := publishMessage(ch, q, coId, body)
+	failOnError(err, "Failed to publish a message")
+	log.Printf(" [x] Sent %s", body)
+	wg.Wait()
+}
 func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	// Attempt to push a message every 2 seconds
 	wg := &sync.WaitGroup{}
@@ -143,8 +186,8 @@ func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 
 	for i := beginPort; i < endPort; i++ {
 		wg.Add(1)
-		coId := fmt.Sprintf("%d", time.Millisecond)
-		coIds[coId] = coId
+		coId := fmt.Sprintf("%d", time.Now().UnixNano())
+		addCoId(coId)
 		body, _ := json.Marshal(makeDeleteRequest(i, coId))
 
 		err := publishMessage(ch, q, coId, body)
@@ -191,6 +234,10 @@ func main() {
 		processBatch(ch, q, bp, ep)
 	case "d":
 		processDelete(ch, q, bp, ep)
+	case "t":
+		processTest(ch, q, bp, ep)
+	case "r":
+		processBatchDelete(ch, q, bp, ep)
 	}
 }
 
@@ -237,22 +284,49 @@ func makeDeleteRequest(port int, coId string) types.BeeRequest {
 	}
 }
 
-func makeBatchRequest(coId string, beginPort, endPort int) types.BeeRequest {
+// func makeTestRequest(coId string) types.BeeRequest {
+// 	return types.BeeRequest{
+// 		MetaData: &types.MetaData{
+// 			Type:          "NETWORK_CFG",
+// 			SubType:       "BATCHLOAD",
+// 			From:          "Tester",
+// 			To:            "HAProxyUpdater",
+// 			Queue:         "testqueue",
+// 			CorrelationId: coId,
+// 		},
+// 		PayLoad: types.RequestPayLoad{
+// 			RequestName: "deleteWorker",
+// 			Data: types.RequestData{
+// 				WorkerId:  fmt.Sprintf("worker-%d", 1),
+// 				ProxyPort: 1 + 10000,
+// 			},
+// 		},
+// 	}
+// }
+
+func makeBatchRequest(coId string, beginPort, endPort int, typeStr string) types.BeeRequest {
 	data := []types.RequestData{}
 
 	for i := beginPort; i < endPort; i++ {
-		data = append(data, types.RequestData{
-			WorkerId:   fmt.Sprintf("worker-%d", i),
-			ClusterIps: []string{"10.0.0.12"},
-			NodeIp:     "10.0.0.12",
-			NodePort:   i + 20000,
-			ProxyPort:  i + 10000,
-		})
+		if typeStr == "BATCHDELETE" {
+			data = append(data, types.RequestData{
+				WorkerId:   fmt.Sprintf("worker-%d", i),
+				ProxyPort:  i + 10000,
+			})	
+		} else {
+			data = append(data, types.RequestData{
+				WorkerId:   fmt.Sprintf("worker-%d", i),
+				ClusterIps: []string{"10.0.0.12"},
+				NodeIp:     "10.0.0.12",
+				NodePort:   i + 20000,
+				ProxyPort:  i + 10000,
+			})
+		}
 	}
 	return types.BeeRequest{
 		MetaData: &types.MetaData{
 			Type:          "NETWORK_CFG",
-			SubType:       "BATCH",
+			SubType:       typeStr,
 			From:          "Tester",
 			To:            "HAProxyUpdater",
 			Queue:         "testqueue",
@@ -260,7 +334,7 @@ func makeBatchRequest(coId string, beginPort, endPort int) types.BeeRequest {
 		},
 		PayLoad: types.RequestPayLoad{
 			RequestName: "createWorker",
-			BatchData:   data,
+			BatchData:   &data,
 		},
 	}
 }
