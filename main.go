@@ -251,11 +251,11 @@ func makeRequest(port int, coId string) types.BeeRequest {
 			Queue:         "testqueue",
 			CorrelationId: coId,
 		},
-		PayLoad: types.RequestPayLoad{
+		PayLoad: &types.RequestPayLoad{
 			RequestName: "createWorker",
-			Data: types.RequestData{
+			Data: &types.RequestData{
 				WorkerId:   fmt.Sprintf("worker-%d", port),
-				ClusterIps: []string{"10.0.0.12"},
+				ClusterIps: &[]string{"10.0.0.12"},
 				NodeIp:     "10.0.0.12",
 				NodePort:   port + 20000,
 				ProxyPort:  port + 10000,
@@ -274,9 +274,9 @@ func makeDeleteRequest(port int, coId string) types.BeeRequest {
 			Queue:         "testqueue",
 			CorrelationId: coId,
 		},
-		PayLoad: types.RequestPayLoad{
+		PayLoad: &types.RequestPayLoad{
 			RequestName: "deleteWorker",
-			Data: types.RequestData{
+			Data: &types.RequestData{
 				WorkerId:  fmt.Sprintf("worker-%d", port),
 				ProxyPort: port + 10000,
 			},
@@ -310,13 +310,13 @@ func makeBatchRequest(coId string, beginPort, endPort int, typeStr string) types
 	for i := beginPort; i < endPort; i++ {
 		if typeStr == "BATCHDELETE" {
 			data = append(data, types.RequestData{
-				WorkerId:   fmt.Sprintf("worker-%d", i),
-				ProxyPort:  i + 10000,
-			})	
+				WorkerId:  fmt.Sprintf("worker-%d", i),
+				ProxyPort: i + 10000,
+			})
 		} else {
 			data = append(data, types.RequestData{
 				WorkerId:   fmt.Sprintf("worker-%d", i),
-				ClusterIps: []string{"10.0.0.12"},
+				ClusterIps: &[]string{"10.0.0.12"},
 				NodeIp:     "10.0.0.12",
 				NodePort:   i + 20000,
 				ProxyPort:  i + 10000,
@@ -332,7 +332,7 @@ func makeBatchRequest(coId string, beginPort, endPort int, typeStr string) types
 			Queue:         "testqueue",
 			CorrelationId: coId,
 		},
-		PayLoad: types.RequestPayLoad{
+		PayLoad: &types.RequestPayLoad{
 			RequestName: "createWorker",
 			BatchData:   &data,
 		},

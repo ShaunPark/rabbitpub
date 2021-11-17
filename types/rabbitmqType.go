@@ -3,13 +3,13 @@ package types
 import "encoding/json"
 
 type BeeRequest struct {
-	MetaData *MetaData      `json:"metadata"`
-	PayLoad  RequestPayLoad `json:"payload"`
+	MetaData *MetaData       `json:"metadata"`
+	PayLoad  *RequestPayLoad `json:"payload"`
 }
 
 type MetaData struct {
 	Type          string `json:"type"`
-	SubType       string `json:"subType"`
+	SubType       string `json:"subType,omitempty"`
 	From          string `json:"from"`
 	To            string `json:"to"`
 	Queue         string `json:"queue"`
@@ -17,17 +17,17 @@ type MetaData struct {
 }
 
 type RequestPayLoad struct {
-	RequestName string         `json:"requestName"`
-	Data        RequestData    `json:"data,omitempty"`
+	RequestName string         `json:"requestName,omitempty"`
+	Data        *RequestData   `json:"data,omitempty"`
 	BatchData   *[]RequestData `json:"batchData,omitempty"`
 }
 
 type RequestData struct {
-	WorkerId   string   `json:"workerId"`
-	ClusterIps []string `json:"clusterIps"`
-	NodeIp     string   `json:"nodeIp"`
-	NodePort   int      `json:"nodePort"`
-	ProxyPort  int      `json:"proxyPort"`
+	WorkerId   string    `json:"workerId,omitempty"`
+	ClusterIps *[]string `json:"clusterIps,omitempty"`
+	NodeIp     string    `json:"nodeIp,omitempty"`
+	NodePort   int       `json:"nodePort,omitempty"`
+	ProxyPort  int       `json:"proxyPort,omitempty"`
 }
 
 type BeeResponse struct {
