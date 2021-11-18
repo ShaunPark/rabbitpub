@@ -5,7 +5,7 @@ batchProcess:
   durable: false
 rabbitmq:
   server:
-    host: '13.125.235.249'
+    host: '13.124.169.140'
     port: '5672'
     id: 'username'
   queueName: 'testqueue'

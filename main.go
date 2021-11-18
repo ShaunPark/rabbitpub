@@ -51,6 +51,7 @@ func getConfig() *types.Config {
 }
 
 func publishMessage(ch *amqp.Channel, q amqp.Queue, coId string, body []byte) error {
+	
 	return ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -82,7 +83,6 @@ func processBatch(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCH"))
 	err := publishMessage(ch, q, coId, body)
 	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s", body)
 	wg.Wait()
 }
 
@@ -141,10 +141,10 @@ func processSingle(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 		delay := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(delay))
 		body, _ := json.Marshal(makeRequest(i, coId))
-
+		log.Printf(" [x] Sent %s", body)
+		log.Printf(" [x] Sent Bytes %d", len(body))
 		err := publishMessage(ch, q, coId, body)
 		failOnError(err, "Failed to publish a message")
-		log.Printf(" [x] Sent %s", body)
 	}
 
 	wg.Wait()
@@ -159,9 +159,10 @@ func processTest(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 	addCoId(coId)
 
 	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCHLOAD"))
+	log.Printf(" [x] Sent %s", body)
+	log.Printf(" [x] Sent Bytes %d", len(body))
 	err := publishMessage(ch, q, coId, body)
 	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s", body)
 	wg.Wait()
 }
 
@@ -174,9 +175,10 @@ func processBatchDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) 
 	addCoId(coId)
 
 	body, _ := json.Marshal(makeBatchRequest(coId, beginPort, endPort, "BATCHDELETE"))
+	log.Printf(" [x] Sent %s", body)
+	log.Printf(" [x] Sent Bytes %d", len(body))
 	err := publishMessage(ch, q, coId, body)
 	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s", body)
 	wg.Wait()
 }
 func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
@@ -189,10 +191,10 @@ func processDelete(ch *amqp.Channel, q amqp.Queue, beginPort, endPort int) {
 		coId := fmt.Sprintf("%d", time.Now().UnixNano())
 		addCoId(coId)
 		body, _ := json.Marshal(makeDeleteRequest(i, coId))
-
+		log.Printf(" [x] Sent %s", body)
+		log.Printf(" [x] Sent Bytes %d", len(body))
 		err := publishMessage(ch, q, coId, body)
 		failOnError(err, "Failed to publish a message")
-		log.Printf(" [x] Sent %s", body)
 	}
 
 	wg.Wait()
