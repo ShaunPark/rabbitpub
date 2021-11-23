@@ -20,6 +20,8 @@ import (
 
 const (
 	reply_queue = "rep_queue"
+
+	nodeIp = "10.0.0.8"
 )
 
 var (
@@ -51,7 +53,7 @@ func getConfig() *types.Config {
 }
 
 func publishMessage(ch *amqp.Channel, q amqp.Queue, coId string, body []byte) error {
-	
+
 	return ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -257,8 +259,8 @@ func makeRequest(port int, coId string) types.BeeRequest {
 			RequestName: "createWorker",
 			Data: &types.RequestData{
 				WorkerId:   fmt.Sprintf("worker-%d", port),
-				ClusterIps: &[]string{"10.0.0.12"},
-				NodeIp:     "10.0.0.12",
+				ClusterIps: &[]string{nodeIp},
+				NodeIp:     nodeIp,
 				NodePort:   port + 20000,
 				ProxyPort:  port + 10000,
 			},
@@ -286,26 +288,6 @@ func makeDeleteRequest(port int, coId string) types.BeeRequest {
 	}
 }
 
-// func makeTestRequest(coId string) types.BeeRequest {
-// 	return types.BeeRequest{
-// 		MetaData: &types.MetaData{
-// 			Type:          "NETWORK_CFG",
-// 			SubType:       "BATCHLOAD",
-// 			From:          "Tester",
-// 			To:            "HAProxyUpdater",
-// 			Queue:         "testqueue",
-// 			CorrelationId: coId,
-// 		},
-// 		PayLoad: types.RequestPayLoad{
-// 			RequestName: "deleteWorker",
-// 			Data: types.RequestData{
-// 				WorkerId:  fmt.Sprintf("worker-%d", 1),
-// 				ProxyPort: 1 + 10000,
-// 			},
-// 		},
-// 	}
-// }
-
 func makeBatchRequest(coId string, beginPort, endPort int, typeStr string) types.BeeRequest {
 	data := []types.RequestData{}
 
@@ -318,8 +300,8 @@ func makeBatchRequest(coId string, beginPort, endPort int, typeStr string) types
 		} else {
 			data = append(data, types.RequestData{
 				WorkerId:   fmt.Sprintf("worker-%d", i),
-				ClusterIps: &[]string{"10.0.0.12"},
-				NodeIp:     "10.0.0.12",
+				ClusterIps: &[]string{nodeIp},
+				NodeIp:     nodeIp,
 				NodePort:   i + 20000,
 				ProxyPort:  i + 10000,
 			})
