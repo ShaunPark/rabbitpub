@@ -208,7 +208,8 @@ func main() {
 	mo := *mode
 
 	name := config.RabbitMQ.Queue
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.RabbitMQ.Server.Id, config.RabbitMQ.Server.Password, config.RabbitMQ.Server.Host, config.RabbitMQ.Server.Port))
+	conn, err := amqp.DialConfig(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.RabbitMQ.Server.Id, config.RabbitMQ.Server.Password, config.RabbitMQ.Server.Host, config.RabbitMQ.Server.Port),
+		amqp.Config{Vhost: "bee_test"})
 	failOnError(err, "Failed  to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -245,8 +246,8 @@ func main() {
 	}
 }
 
-func makeRequest(port int, coId string) types.BeeRequest {
-	return types.BeeRequest{
+func makeRequest(port int, coId string) types.BeeRequestWorker {
+	return types.BeeRequestWorker{
 		MetaData: &types.MetaData{
 			Type:          "NETWORK_CFG",
 			SubType:       "ADD",
@@ -255,14 +256,13 @@ func makeRequest(port int, coId string) types.BeeRequest {
 			Queue:         "testqueue",
 			CorrelationId: coId,
 		},
-		PayLoad: &types.RequestPayLoad{
-			RequestName: "createWorker",
-			Data: &types.RequestData{
-				WorkerId:   fmt.Sprintf("worker-%d", port),
-				ClusterIps: &[]string{nodeIp},
-				NodeIp:     nodeIp,
-				NodePort:   port + 20000,
-				ProxyPort:  port + 10000,
+		PayLoad: &types.WorkerRequestPayLoad{
+			Data: &types.WorkerRequestData{
+				WorkerId:  fmt.Sprintf("worker-%d", port),
+				ClusterId: "pri-bee-mg",
+				NodeIp:    nodeIp,
+				NodePort:  port + 20000,
+				ProxyPort: port + 10000,
 			},
 		},
 	}

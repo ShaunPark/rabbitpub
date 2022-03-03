@@ -3,8 +3,22 @@ package types
 import "encoding/json"
 
 type BeeRequest struct {
-	MetaData *MetaData       `json:"metadata"`
-	PayLoad  *RequestPayLoad `json:"payload"`
+	MetaData *MetaData `json:"metadata"`
+}
+
+type BeeRequestWorker struct {
+	MetaData *MetaData             `json:"metadata"`
+	PayLoad  *WorkerRequestPayLoad `json:"payload"`
+}
+
+type BeeRequestBatch struct {
+	MetaData *MetaData            `json:"metadata"`
+	PayLoad  *BatchRequestPayLoad `json:"payload"`
+}
+
+type BeeRequestCluster struct {
+	MetaData *MetaData              `json:"metadata"`
+	PayLoad  *ClusterRequestPayLoad `json:"payload"`
 }
 
 type MetaData struct {
@@ -16,18 +30,44 @@ type MetaData struct {
 	CorrelationId string `json:"correlationId"`
 }
 
-type RequestPayLoad struct {
-	RequestName string         `json:"requestName,omitempty"`
-	Data        *RequestData   `json:"data,omitempty"`
-	BatchData   *[]RequestData `json:"batchData,omitempty"`
+type WorkerRequestPayLoad struct {
+	// RequestName string `json:"requestName,omitempty"`
+	// Data        string `json:"data"`
+	Data *WorkerRequestData `json:"data,omitempty"`
+	// BatchData   *[]RequestData `json:"batchData,omitempty"`
 }
 
-type RequestData struct {
-	WorkerId   string    `json:"workerId,omitempty"`
-	ClusterIps *[]string `json:"clusterIps,omitempty"`
-	NodeIp     string    `json:"nodeIp,omitempty"`
-	NodePort   int       `json:"nodePort,omitempty"`
-	ProxyPort  int       `json:"proxyPort,omitempty"`
+type BatchRequestPayLoad struct {
+	// RequestName string `json:"requestName,omitempty"`
+	// Data        string `json:"data"`
+	// Data        *WorkerRequestData   `json:"data,omitempty"`
+	Data *[]WorkerRequestData `json:"batchData,omitempty"`
+}
+
+type ClusterRequestPayLoad struct {
+	// RequestName string `json:"requestName,omitempty"`
+	// Data        string `json:"data"`
+	Data *ClusterRequestData `json:"data,omitempty"`
+	// BatchData   *[]RequestData `json:"batchData,omitempty"`
+}
+type WorkerRequestData struct {
+	WorkerId  string `json:"workerId,omitempty"`
+	ClusterId string `json:"clusterId,omitempty"`
+	// ClusterIps *[]string `json:"clusterIps,omitempty"`
+	NodeIp    string `json:"nodeIp,omitempty"`
+	NodePort  int    `json:"nodeSSHPort,omitempty"`
+	ProxyPort int    `json:"proxyPort,omitempty"`
+}
+
+type ClusterRequestData struct {
+	ClusterId                 string    `json:"clusterId,omitempty"`
+	RouteNodeIps              *RouteIps `json:"routeNodeIps,omitempty"`
+	IngresControllerNodeports []int     `json:"ingresControllerNodeports,omitempty"`
+}
+
+type RouteIps struct {
+	SSH  *[]string `json:"ssh,omitempty"`
+	Http *[]string `json:"http,omitempty"`
 }
 
 type BeeResponse struct {
